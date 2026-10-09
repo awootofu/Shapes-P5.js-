@@ -1,0 +1,10 @@
+{
+  "name": "p5-flat-paint",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Flat Paint Studio — a p5.js drawing application (Computer Graphics midterm)",
+  "scripts": {
+    "serve": "python -m http.server 8080",
+    "test": "node tests/smoke.mjs"
+  }
+}

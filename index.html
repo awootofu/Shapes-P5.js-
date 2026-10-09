@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flat Paint Studio — p5.js drawing app</title>
+<meta name="description" content="A small paint/drawing application built with p5.js: image loading, all shape primitives with flat colors, and full object transforms.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d12'/%3E%3Ccircle cx='12' cy='13' r='5' fill='%23f2b344'/%3E%3Crect x='17' y='16' width='10' height='10' rx='2' fill='%2317c3b2'/%3E%3C/svg%3E">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand">
+      <span class="mark">FP</span>
+      <span class="brand-text">Flat Paint Studio<em>p5.js</em></span>
+    </div>
+
+    <div class="group" role="group" aria-label="History">
+      <button class="btn" id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button class="btn" id="btn-redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+    </div>
+
+    <div class="group" role="group" aria-label="File">
+      <button class="btn" id="btn-clear" title="Clear the artboard (keeps nothing)">Clear</button>
+      <button class="btn primary" id="btn-export" title="Export PNG (Ctrl+S)">Export PNG</button>
+    </div>
+
+    <div class="group" role="group" aria-label="View">
+      <button class="btn icon" id="btn-zoom-out" title="Zoom out (-)">&minus;</button>
+      <span class="zoom-readout" id="zoom-readout">100%</span>
+      <button class="btn icon" id="btn-zoom-in" title="Zoom in (+)">+</button>
+      <button class="btn" id="btn-fit" title="Fit artboard (0)">Fit</button>
+      <button class="btn" id="btn-zoom-reset" title="Reset view (Home)">100%</button>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="group" role="group" aria-label="Image">
+      <button class="btn" id="btn-load-image" title="Load image from file (I)">Load image…</button>
+    </div>
+    <button class="btn ghost" id="btn-help" title="Keyboard shortcuts &amp; help (?)">?</button>
+    <input type="file" id="file-image" accept="image/*" hidden>
+  </header>
+
+  <div id="body">
+
+    <nav id="tools" aria-label="Tools">
+      <button class="tool" data-tool="select" title="Select &amp; transform (V)">
+        <svg viewBox="0 0 24 24" class="ic"><path d="M5 3l14 8-6.2 1.5L10.4 19z"/></svg><span class="key">V</span>
+      </button>
+      <button class="tool" data-tool="brush" title="Brush / freehand (B)">
+        <svg viewBox="0 0 24 24" class="ic"><path d="M3 17c3-7 6 5 9-2s5 3 9-5"/></svg><span class="key">B</span>
+      </button>
+      <button class="tool" data-tool="line" title="Line (L)"><svg viewBox="0 0 24 24" class="ic"><path d="M4 20L20 4"/></svg><span class="key">L</span></button>
+      <button class="tool" data-tool="rect" title="Rectangle (R)"><svg viewBox="0 0 24 24" class="ic"><rect x="3.5" y="6" width="17" height="12" rx="1.5"/></svg><span class="key">R</span></button>
+      <button class="tool" data-tool="square" title="Square (U)"><svg viewBox="0 0 24 24" class="ic"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5"/></svg><span class="key">U</span></button>
+      <button class="tool" data-tool="ellipse" title="Ellipse (E)"><svg viewBox="0 0 24 24" class="ic"><ellipse cx="12" cy="12" rx="8.5" ry="6"/></svg><span class="key">E</span></button>
+      <button class="tool" data-tool="circle" title="Circle (O)"><svg viewBox="0 0 24 24" class="ic"><circle cx="12" cy="12" r="7.5"/></svg><span class="key">O</span></button>
+      <button class="tool" data-tool="triangle" title="Triangle (T)"><svg viewBox="0 0 24 24" class="ic"><path d="M12 4.5l8 15H4z"/></svg><span class="key">T</span></button>
+      <button class="tool" data-tool="quad" title="Quad (Q)"><svg viewBox="0 0 24 24" class="ic"><path d="M5 8.5l7-4.5 7 5.5-2.5 9.5-9.5 1z"/></svg><span class="key">Q</span></button>
+      <button class="tool" data-tool="poly" title="Polygon / custom vertices (P) — click points, Enter to close">
+        <svg viewBox="0 0 24 24" class="ic"><path d="M12 3.5l7.6 5.5-2.9 8.9H7.3L4.4 9z"/></svg><span class="key">P</span>
+      </button>
+      <button class="tool" data-tool="arc" title="Arc (A) — drag a box, then tune the angles">
+        <svg viewBox="0 0 24 24" class="ic"><path d="M4 18a8 8 0 0 1 16 0"/><path d="M7 18h14" opacity=".45"/></svg><span class="key">A</span>
+      </button>
+      <button class="tool" data-tool="bezier" title="Bezier curve (C) — 4 clicks: anchor, handle, handle, anchor">
+        <svg viewBox="0 0 24 24" class="ic"><path d="M4 18C4 7 20 17 20 6"/><circle cx="4" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="20" cy="6" r="1.4" fill="currentColor" stroke="none"/></svg><span class="key">C</span>
+      </button>
+      <button class="tool" data-tool="point" title="Point (D)"><svg viewBox="0 0 24 24" class="ic"><circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/></svg><span class="key">D</span></button>
+      <div class="tool-sep"></div>
+      <button class="tool" data-tool="image" title="Place image (I)"><svg viewBox="0 0 24 24" class="ic"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M4 17.5l4.5-4.5 3.5 3.5 2.5-2 4.5 4"/></svg><span class="key">I</span></button>
+      <button class="tool" data-tool="pan" title="Pan the view (H, or hold Space / middle mouse)"><svg viewBox="0 0 24 24" class="ic"><path d="M12 3.5v8M8 7.5v5M16 7.5v5M5.5 11.5v3.5a5 5 0 0 0 5 5h3a5 5 0 0 0 5-5v-2.5"/></svg><span class="key">H</span></button>
+    </nav>
+
+    <main id="stage">
+      <div id="canvas-host"></div>
+      <div id="drop-overlay"><div class="drop-card">Drop image to place it on the artboard</div></div>
+    </main>
+
+    <aside id="panel">
+
+      <section class="card">
+        <h2><span id="props-title">Tool defaults</span></h2>
+        <div class="row">
+          <label class="chk"><input type="checkbox" id="chk-fill" checked><span>Fill</span></label>
+          <input type="color" id="in-fill" value="#4f6df5" title="Fill colour (flat)">
+          <input type="range" id="in-alpha" min="0" max="100" value="100" title="Fill opacity">
+          <output id="out-alpha">100%</output>
+        </div>
+        <div class="row">
+          <label class="chk"><input type="checkbox" id="chk-stroke"><span>Stroke</span></label>
+          <input type="color" id="in-stroke" value="#0b0d12" title="Stroke colour">
+          <input type="range" id="in-weight" min="1" max="40" value="3" title="Stroke weight">
+          <output id="out-weight">3</output>
+        </div>
+        <div class="row" id="row-radius" hidden>
+          <label class="chk wide"><span>Corner radius</span></label>
+          <input type="range" id="in-radius" min="0" max="200" value="0">
+          <output id="out-radius">0</output>
+        </div>
+        <div class="row wrap" id="row-arc" hidden>
+          <label class="chk wide"><span>Arc start / stop</span><output id="out-arc">0° → 180°</output></label>
+          <input type="range" id="in-a0" min="0" max="360" value="0" title="Start angle A0">
+          <input type="range" id="in-a1" min="0" max="360" value="180" title="Stop angle A1">
+          <select id="in-arcmode" title="Arc mode">
+            <option value="PIE">PIE</option>
+            <option value="CHORD">CHORD</option>
+            <option value="OPEN">OPEN</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Flat colour <span class="hint">click = fill · shift-click = stroke</span></h2>
+        <select id="in-palette" class="wide"></select>
+        <div id="swatches" class="swatches"></div>
+      </section>
+
+      <section class="card" id="card-transform">
+        <h2>Transform <span class="hint" id="sel-hint">nothing selected</span></h2>
+        <div class="grid4">
+          <label>X<input type="number" id="in-x" step="1"></label>
+          <label>Y<input type="number" id="in-y" step="1"></label>
+          <label>W<input type="number" id="in-w" step="1" min="1"></label>
+          <label>H<input type="number" id="in-h" step="1" min="1"></label>
+        </div>
+        <div class="row">
+          <label class="chk wide"><span>Rotation</span></label>
+          <input type="range" id="in-rot" min="-180" max="180" value="0">
+          <output id="out-rot">0°</output>
+        </div>
+        <div class="btns">
+          <button class="btn sm" id="btn-rot-ccw" title="Rotate -90°">⟲ 90°</button>
+          <button class="btn sm" id="btn-rot-cw" title="Rotate +90°">⟳ 90°</button>
+          <button class="btn sm" id="btn-flip-h" title="Flip horizontally">Flip H</button>
+          <button class="btn sm" id="btn-flip-v" title="Flip vertically">Flip V</button>
+        </div>
+        <div class="btns">
+          <button class="btn sm" id="btn-dup" title="Duplicate (Ctrl+D)">Duplicate</button>
+          <button class="btn sm" id="btn-front" title="Bring to front (])">Front</button>
+          <button class="btn sm" id="btn-back" title="Send to back ([)">Back</button>
+          <button class="btn sm danger" id="btn-del" title="Delete (Del)">Delete</button>
+        </div>
+        <div class="btns">
+          <button class="btn sm" id="btn-fit-art" title="Fit the image/shape to the artboard">Fit to artboard</button>
+          <button class="btn sm" id="btn-lock-aspect" title="Keep the original aspect ratio while scaling">Lock aspect: on</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Image source</h2>
+        <div class="row">
+          <input type="url" id="in-img-url" class="grow" placeholder="https://…/photo.png" spellcheck="false">
+          <button class="btn sm" id="btn-load-url">Load</button>
+        </div>
+        <div class="btns">
+          <button class="btn sm" id="btn-load-file-2">From file…</button>
+          <label class="chk"><input type="checkbox" id="chk-img-fit" checked><span>Fit on load</span></label>
+        </div>
+        <p class="note" id="img-note">Files, URLs and drag&amp;drop are all supported. Remote images must send CORS headers to stay exportable.</p>
+      </section>
+
+      <section class="card">
+        <h2>Canvas</h2>
+        <div class="row">
+          <label class="chk wide"><span>Artboard</span></label>
+          <input type="color" id="in-bg" value="#ffffff">
+          <select id="in-canvas-size">
+            <option value="1280x720">1280 × 720</option>
+            <option value="1080x1080">1080 × 1080</option>
+            <option value="1080x1350">1080 × 1350</option>
+            <option value="1920x1080">1920 × 1080</option>
+            <option value="1000x1000">1000 × 1000</option>
+          </select>
+        </div>
+        <div class="btns">
+          <label class="chk"><input type="checkbox" id="chk-grid" checked><span>Grid</span></label>
+          <label class="chk"><input type="checkbox" id="chk-shadow" checked><span>Shadow</span></label>
+          <label class="chk"><input type="checkbox" id="chk-snap" checked><span>Snap 15°</span></label>
+        </div>
+      </section>
+
+      <section class="card grow-card">
+        <h2>Layers <span class="hint" id="layer-count">0</span></h2>
+        <ul id="layers" class="layers"></ul>
+      </section>
+
+    </aside>
+  </div>
+
+  <footer id="statusbar">
+    <span id="status-hint">Pick a tool to start.</span>
+    <span class="spacer"></span>
+    <span id="status-coords">–</span>
+    <span id="status-zoom">zoom 100%</span>
+  </footer>
+</div>
+
+<div id="help-overlay" hidden>
+  <div class="help-card">
+    <h2>Flat Paint Studio — help</h2>
+    <div class="help-cols">
+      <div>
+        <h3>Tools</h3>
+        <table>
+          <tr><td>V</td><td>Select &amp; transform</td></tr>
+          <tr><td>B</td><td>Brush (freehand stroke)</td></tr>
+          <tr><td>L</td><td>Line</td></tr>
+          <tr><td>R / U</td><td>Rectangle / Square</td></tr>
+          <tr><td>E / O</td><td>Ellipse / Circle</td></tr>
+          <tr><td>T</td><td>Triangle</td></tr>
+          <tr><td>Q</td><td>Quad</td></tr>
+          <tr><td>P</td><td>Polygon (custom vertices)</td></tr>
+          <tr><td>A</td><td>Arc (PIE / CHORD / OPEN)</td></tr>
+          <tr><td>C</td><td>Bezier curve</td></tr>
+          <tr><td>D</td><td>Point / dot</td></tr>
+          <tr><td>I</td><td>Place an image</td></tr>
+          <tr><td>H</td><td>Pan the view</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Editing</h3>
+        <table>
+          <tr><td>drag box</td><td>draw rect/ellipse/square/circle/arc</td></tr>
+          <tr><td>click points</td><td>line, triangle, quad, polygon, bezier</td></tr>
+          <tr><td>Enter</td><td>close the polygon</td></tr>
+          <tr><td>Shift</td><td>constrain (square / axis / 15° snap)</td></tr>
+          <tr><td>Alt-drag</td><td>duplicate while moving</td></tr>
+          <tr><td>Del</td><td>delete selection</td></tr>
+          <tr><td>Ctrl+D</td><td>duplicate</td></tr>
+          <tr><td>Ctrl+Z / Ctrl+Shift+Z</td><td>undo / redo</td></tr>
+          <tr><td>arrows</td><td>nudge 1px (Shift = 10px)</td></tr>
+          <tr><td>[ / ]</td><td>stroke weight</td></tr>
+          <tr><td>, / .</td><td>send to back / bring to front</td></tr>
+          <tr><td>Ctrl+S</td><td>export PNG</td></tr>
+          <tr><td>Space-drag / wheel</td><td>pan / zoom</td></tr>
+          <tr><td>0 / Home</td><td>fit / reset view</td></tr>
+          <tr><td>Esc</td><td>cancel &amp; deselect</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="help-foot">
+      <p><strong>Transform</strong> works on any object already on the canvas: drag inside its box to move, drag a corner handle to scale, drag the round handle above the box to rotate, and use the Transform panel for exact X/Y/W/H, flips, rotation steps and layer order.</p>
+      <p><strong>Flat colour</strong> means solid fills only — no gradients or textures — so every shape is a single unambiguous hue you can read off the palette.</p>
+    </div>
+    <button class="btn primary" id="btn-help-close">Got it</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/model.js"></script>
+<script src="js/render.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/sketch.js"></script>
+</body>
+</html>

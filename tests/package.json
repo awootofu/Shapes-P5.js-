@@ -1,0 +1,13 @@
+{
+  "name": "p5-flat-paint-tests",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Headless smoke tests for Flat Paint Studio",
+  "scripts": {
+    "test": "node smoke.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.0.0"
+  }
+}

@@ -1,0 +1,10 @@
+# test harness only — the app itself has no build step or dependencies
+tests/node_modules/
+tests/package-lock.json
+tests/probe.png
+tests/shot-*.png
+tests/debug*.mjs
+
+.DS_Store
+Thumbs.db
+*.log
